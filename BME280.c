@@ -1,7 +1,7 @@
 #include "BME280.h"
 #include "../../tires/i2c/i2c.h"
 
-static s_trim_table trim_table;
+static s_trim_table trim_table;			///> Для хранения калибровочных значений
 
 uint8_t init_BME280_i2c (const uint8_t addr)
 {
@@ -11,7 +11,7 @@ uint8_t init_BME280_i2c (const uint8_t addr)
 		return 1; 		//Не удалось прочитать ID датчика
 
 	if (t_buff != VALUE_ID_BME280)
-		return 2;		//Прочетанный ID не совпадает с ожидаемым
+		return 2;		//Прочитанный ID не совпадает с ожидаемым
 
 	if ( a_write_reg_i2c_8b(VALUE_RESET_BME280, REG_RESET_BME280, addr) )
 		return 3;		//Не удачный сброс датчика
@@ -26,6 +26,32 @@ uint8_t init_BME280_i2c (const uint8_t addr)
 	read_coeff_BME280_i2c(addr);
 
     return 0;
+}
+
+uint8_t def_init_BME280_i2c (const uint8_t addr)
+{
+	if ( init_BME280_i2c (addr) )
+		return 1;			//Не успешная инициализация
+
+	if ( set_standby_BME280_i2c (addr, STANDBY_250_0_BME280) )
+		return 2;			//Не удалось установить задержку между измерениями
+
+	if ( set_filter_BME280_i2c (addr, FILTER_4_BME280) )
+		return 3;			//Не удалось установить фильтр
+
+	if ( set_temp_overs_BME280_i2c(addr, TEMP_OVERS_4_BME280) )
+		return 4;			//Не удалось установить значение оверсемплинга для температуры
+
+	if ( set_pres_overs_BME280_i2c(addr, PRES_OVERS_2_BME280) )
+		return 5;			//Не удалось установить значение оверсемплинга для давления
+
+	if ( set_hum_overs_BME280_i2c(addr, HUM_OVERS_1_BME280) )
+		return 6;			//Не удалось установить значение оверсемплинга для влажности
+
+	if ( set_mode_BME280_i2c(addr, MODE_NORM_BME280) )
+		return 7;			//Не удалось установить режим сбора данных изменрений
+
+	return 0;
 }
 
 uint8_t check_status_BME280_i2c (const uint8_t addr, uint8_t *data)
@@ -77,7 +103,7 @@ uint8_t set_standby_BME280_i2c (const uint8_t addr, const uint8_t stend)
 	uint8_t v_reg = 0;
 
 	if ( a_read_i2c_8b(&v_reg, REG_CONFIG_BME280, addr) )
-		return 1;				//Не удалось конфигурационный регистр
+		return 1;				//Не удалось считать конфигурационный регистр
 
 	v_reg &= ~M_CONFIG_STANDBY_BME280;
 	v_reg |= stend & M_CONFIG_STANDBY_BME280;
@@ -109,13 +135,13 @@ uint8_t set_hum_overs_BME280_i2c (const uint8_t addr, const uint8_t over)
 	uint8_t v_reg = 0;
 
 	if ( a_read_i2c_8b(&v_reg, REG_CTRL_HUMID_BME280, addr) )
-		return 1;				//Не удалось конфигурационный регистр
+		return 1;				//Не удалось прочитать регистр оверсемплинга
 
 	v_reg &= ~M_CTRL_HUM_BME280;
 	v_reg |= over & M_CTRL_HUM_BME280;
 
 	if ( a_write_reg_i2c_8b(v_reg, REG_CTRL_HUMID_BME280, addr) )
-		return 2;				//Не удалось отправить фильтр
+		return 2;				//Не удалось отправить параметр влажности
 
 	if ( a_read_i2c_8b(&v_reg, REG_CTRL_MEAS_BME280, addr) )
 		return 3;				//Ошибка установки параметров
@@ -131,13 +157,13 @@ uint8_t set_temp_overs_BME280_i2c (const uint8_t addr, const uint8_t over)
 	uint8_t v_reg = 0;
 
 	if ( a_read_i2c_8b(&v_reg, REG_CTRL_MEAS_BME280, addr) )
-		return 1;				//Не удалось конфигурационный регистр
+		return 1;				//Не удалось прочитать регистр оверсемплинга
 
 	v_reg &= ~M_CTRL_MEAS_TEMP_BME280;
 	v_reg |= over & M_CTRL_MEAS_TEMP_BME280;
 
 	if ( a_write_reg_i2c_8b(v_reg, REG_CTRL_MEAS_BME280, addr) )
-		return 2;				//Не удалось отправить фильтр
+		return 2;				//Не удалось отправить параметр влажности
 
 	return 0;
 }
@@ -169,17 +195,17 @@ uint8_t set_mode_BME280_i2c (const uint8_t addr, const uint8_t mode)
 	v_reg |= mode & M_CTRL_MEAS_MODE_BME280;
 
 	if ( a_write_reg_i2c_8b(v_reg, REG_CTRL_MEAS_BME280, addr) )
-		return 2;				//Не удалось отправить фильтр
+		return 2;				//Не удалось отправить режим
 
 	return 0;
 }
 
-uint8_t read_temp_BME280_i2c (int32_t *temp, const uint8_t addr, uint8_t conv)
+uint8_t read_temp_BME280_i2c (const uint8_t addr, int32_t *temp, const uint8_t conv)
 {
 	int32_t r_temp = 0;
 	int32_t val1 = 0, val2 = 0;
 	if ( a_read_i2c_24b ( (uint32_t*)&r_temp, REG_TEMP_BME280, addr) )
-		return 1;			//Не удачное чтение регистар
+		return 1;			//Не удачное чтение регистра
 
 	r_temp >>= 4;
 
@@ -195,16 +221,16 @@ uint8_t read_temp_BME280_i2c (int32_t *temp, const uint8_t addr, uint8_t conv)
 	return 0;
 }
 
-uint8_t read_pres_BME280_i2c (int32_t *pres, const uint8_t addr, uint8_t conv)
+uint8_t read_pres_BME280_i2c (const uint8_t addr, int32_t *pres, const uint8_t conv)
 {
 	int32_t temp = 0;
-	if ( read_temp_BME280_i2c (&temp, addr, 0) )
+	if ( read_temp_BME280_i2c (addr, &temp, 0) )
 		return 2;			//Не удалось считать температуру
 
 	uint32_t r_pres = 0;
 	int64_t val1 = 0, val2 = 0, p = 0;
 	if ( a_read_i2c_24b ( (uint32_t*)&r_pres, REG_PRES_BME280, addr) )
-		return 1;			//Не удачное чтение регистар
+		return 1;			//Не удачное чтение регистра
 
 	r_pres >>=4;
 
@@ -230,16 +256,16 @@ uint8_t read_pres_BME280_i2c (int32_t *pres, const uint8_t addr, uint8_t conv)
 	return 0;
 }
 
-uint8_t read_hum_BME280_i2c (int32_t *hum, const uint8_t addr, uint8_t conv)
+uint8_t read_hum_BME280_i2c (const uint8_t addr, int32_t *hum, const uint8_t conv)
 {
 	int32_t temp = 0;
-	if ( read_temp_BME280_i2c (&temp, addr, 0) )
+	if ( read_temp_BME280_i2c (addr, &temp, 0) )
 		return 2;			//Не удалось считать температуру
 
 	uint32_t r_hum = 0;
 	int64_t val1 = 0;
 	if ( a_read_i2c_16b ( (uint16_t*)&r_hum, REG_HUM_BME280, addr) )
-		return 1;			//Не удачное чтение регистар
+		return 1;			//Не удачное чтение регистра
 
 	val1 = (temp - ((int32_t)76800));
 
