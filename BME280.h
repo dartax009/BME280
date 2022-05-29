@@ -110,24 +110,24 @@
  */
 typedef struct _s_trim_table
 {
-	uint16_t	dig_T1;
-	int16_t		dig_T2;
-	int16_t		dig_T3;
-	uint16_t	dig_P1;
-	int16_t		dig_P2;
-	int16_t		dig_P3;
-	int16_t		dig_P4;
-	int16_t		dig_P5;
-	int16_t		dig_P6;
-	int16_t		dig_P7;
-	int16_t		dig_P8;
-	int16_t		dig_P9;
-	uint8_t		dig_H1;
-	int16_t		dig_H2;
-	uint8_t		dig_H3;
-	int16_t		dig_H4;
-	int16_t		dig_H5;
-	int8_t		dig_H6;
+	uint16_t	dig_T1;			///> Температура 1
+	int16_t		dig_T2;			///> Температура 2
+	int16_t		dig_T3;			///> Температура 3
+	uint16_t	dig_P1;			///> Давление 1
+	int16_t		dig_P2;			///> Давление 2
+	int16_t		dig_P3;			///> Давление 3
+	int16_t		dig_P4;			///> Давление 4
+	int16_t		dig_P5;			///> Давление 5
+	int16_t		dig_P6;			///> Давление 6
+	int16_t		dig_P7;			///> Давление 7
+	int16_t		dig_P8;			///> Давление 8
+	int16_t		dig_P9;			///> Давление 9
+	uint8_t		dig_H1;			///> Влажность 1
+	int16_t		dig_H2;			///> Влажность 2
+	uint8_t		dig_H3;			///> Влажность 3
+	int16_t		dig_H4;			///> Влажность 4
+	int16_t		dig_H5;			///> Влажность 5
+	int8_t		dig_H6;			///> Влажность 6
 
 } s_trim_table;
 
